@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#111111"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
+<meta name="apple-mobile-web-app-title" content="BobinesAcier"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icons/icon-192.png"/>
+<title>Réception Bobines d'Acier</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;min-height:100vh;padding:1rem}
+h1{font-size:17px;font-weight:700;letter-spacing:0.04em;color:#111;margin-bottom:1.2rem;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+h1 span.badge{font-size:9px;font-weight:700;background:#111;color:#fff;padding:3px 7px;border-radius:4px;letter-spacing:0.08em;vertical-align:middle}
+.app{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:960px;margin:0 auto}
+.card{background:#fff;border:1px solid #e0e0da;border-radius:10px;padding:1.1rem}
+.section-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.9rem}
+.field{margin-bottom:0.8rem}
+label{display:block;font-size:12px;color:#666;margin-bottom:3px}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:1px solid #d0d0cc;border-radius:6px;background:#fff;color:#111;-webkit-appearance:none}
+select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px rgba(58,138,224,0.15)}
+.btn{padding:9px 14px;font-size:13px;font-weight:600;letter-spacing:0.03em;border:1px solid #ccc;border-radius:6px;background:#fff;color:#333;cursor:pointer;touch-action:manipulation}
+.btn:active{opacity:0.75}
+.btn-primary{background:#111;color:#fff;border-color:#111}
+.btn-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:24px}
+.tag{display:flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px;border:1px solid #ddd;border-radius:999px;background:#f7f7f5;color:#555}
+.tag-x{cursor:pointer;font-size:14px;color:#aaa;line-height:1;padding:0 2px}
+.add-row{display:flex;gap:6px;margin-top:6px}
+.add-row input{flex:1}
+.tabs{display:flex;margin-bottom:1rem;border-bottom:1px solid #e5e5e0}
+.tab{padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;text-transform:uppercase;letter-spacing:0.05em;touch-action:manipulation}
+.tab.active{color:#111;border-bottom-color:#111}
+.preview-empty{display:flex;align-items:center;justify-content:center;height:260px;color:#bbb;font-size:12px;border:1px dashed #ddd;border-radius:8px;text-align:center;padding:1rem}
+.success-msg{font-size:11px;color:#27ae60;padding:5px 10px;background:#eafaf1;border-radius:5px;display:none;margin-top:8px}
+.install-banner{display:none;background:#111;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:12px;align-items:center;gap:10px;max-width:960px;margin-left:auto;margin-right:auto}
+.install-banner button{padding:6px 12px;font-size:12px;font-weight:600;border:1px solid #fff;border-radius:5px;background:transparent;color:#fff;cursor:pointer;flex-shrink:0}
+
+/* ── PRINT SHEET: 4×6 inch ── */
+.ps{
+  background:#fff;color:#000;
+  font-family:Arial,Helvetica,sans-serif;
+  border:1.5px solid #000;
+  width:4in;height:6in;
+  font-size:11px;
+  display:flex;flex-direction:column;
+}
+.ps-section{border-bottom:1px solid #000;padding:5px 7px;flex-shrink:0}
+.ps-label{font-size:8px;font-weight:700;letter-spacing:0.07em;color:#000;display:block;margin-bottom:2px;text-transform:uppercase}
+.ps-value{font-size:16px;font-weight:700;display:block;padding:1px 0 1px 2px;line-height:1.2}
+.ps-produit{display:flex;align-items:center;gap:6px}
+.ps-produit .ps-value{font-size:24px}
+.ps-x{font-size:22px;font-weight:900}
+.ps-articles{flex:1;display:flex;flex-direction:column;border-bottom:1px solid #000;min-height:0}
+.ps-articles-body{flex:1;padding:4px 7px;font-size:13px;font-weight:600}
+.ps-recept{border-bottom:1px solid #000;padding:5px 7px;flex-shrink:0}
+.ps-barcode{padding:6px 7px 5px;display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+
+@media print{
+  body{background:#fff;padding:0;margin:0}
+  .no-print{display:none!important}
+  .app{display:block}
+  .card{border:none;padding:0;box-shadow:none}
+  .ps{border:none}
+  @page{size:4in 6in;margin:0}
+}
+@media(max-width:640px){
+  .app{grid-template-columns:1fr}
+  body{padding:0.75rem}
+  h1{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<div id="install-banner" class="install-banner no-print">
+  <span style="flex:1">Installez l'app sur votre appareil pour l'utiliser hors ligne!</span>
+  <button onclick="installApp()">Installer</button>
+  <button onclick="document.getElementById('install-banner').style.display='none'" style="border:none;background:transparent;color:#aaa;font-size:18px;padding:0 4px">×</button>
+</div>
+
+<div style="max-width:960px;margin:0 auto">
+  <h1>Réception Bobines d'Acier <span class="badge no-print">PWA</span></h1>
+  <div class="app">
+
+    <!-- FORM -->
+    <div class="card no-print">
+      <div id="view-form">
+        <p class="section-title">Nouvelle entrée de bobine</p>
+        <div class="field">
+          <label>1 – Produit (épaisseur × largeur)</label>
+          <select id="sel-size"><option value="">— sélectionner —</option></select>
+        </div>
+        <div class="field">
+          <label>2 – Fournisseur</label>
+          <select id="sel-provider"><option value="">— sélectionner —</option></select>
+        </div>
+        <div class="field">
+          <label>3 – N° de série / SKU</label>
+          <input type="text" id="inp-sku" placeholder="ex. 8224457" autocomplete="off" autocorrect="off" autocapitalize="off"/>
+        </div>
+        <div class="field">
+          <label>4 – Poids (LB)</label>
+          <input type="number" id="inp-weight" placeholder="ex. 7120" min="0" step="0.1" inputmode="decimal"/>
+        </div>
+        <div class="field">
+          <label>5 – Articles / remarques (optionnel)</label>
+          <input type="text" id="inp-notes" placeholder="ex. OK, dommages de surface..."/>
+        </div>
+        <div class="field">
+          <label>6 – Nom du réceptionnaire</label>
+          <input type="text" id="inp-name" placeholder="ex. Jean Tremblay" autocomplete="name"/>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generateSheet()">Générer la fiche</button>
+          <button class="btn" onclick="showView('lists')">Gérer les listes</button>
+        </div>
+        <p class="success-msg" id="success-msg">Fiche générée avec succès!</p>
+      </div>
+
+      <div id="view-lists" style="display:none">
+        <p class="section-title">Gérer les options des listes</p>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('providers')">Fournisseurs</div>
+          <div class="tab" onclick="switchTab('sizes')">Dimensions</div>
+        </div>
+        <div id="list-providers">
+          <div class="tag-list" id="tags-providers"></div>
+          <div class="add-row">
+            <input type="text" id="add-providers" placeholder="Ajouter un fournisseur..."/>
+            <button class="btn" onclick="addItem('providers')">Ajouter</button>
+          </div>
+        </div>
+        <div id="list-sizes" style="display:none">
+          <div class="tag-list" id="tags-sizes"></div>
+          <div class="add-row">
+            <input type="text" id="add-sizes" placeholder="ex. 0.040 x 48.000"/>
+            <button class="btn" onclick="addItem('sizes')">Ajouter</button>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="showView('form')">Retour au formulaire</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="card" style="display:flex;flex-direction:column">
+      <p class="section-title no-print">Aperçu 4 × 6 po</p>
+      <div id="preview-area">
+        <div class="preview-empty" id="empty-msg">Remplissez le formulaire et cliquez sur « Générer la fiche »</div>
+        <div id="print-area" style="display:none"></div>
+      </div>
+      <div class="btn-row no-print" id="print-btn-row" style="display:none;margin-top:1rem">
+        <button class="btn btn-primary" onclick="window.print()">Imprimer</button>
+        <button class="btn" onclick="resetSheet()">Nouvelle entrée</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script>
+// ── Service Worker ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(e){console.warn('SW:',e);});
+  });
+}
+
+// ── Install prompt ──
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();
+  deferredPrompt=e;
+  var banner=document.getElementById('install-banner');
+  if(banner){banner.style.display='flex';}
+});
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(){
+    deferredPrompt=null;
+    var banner=document.getElementById('install-banner');
+    if(banner)banner.style.display='none';
+  });
+}
+window.addEventListener('appinstalled',function(){
+  var banner=document.getElementById('install-banner');
+  if(banner)banner.style.display='none';
+});
+
+// ── Data ──
+var DEFAULTS={
+  providers:['COLOR STEEL','NOVA STEEL','MICHEL DESCHAMPS','SAMUEL','ARCELOR MITTAL'],
+  sizes:['0.009 x 42.250','0.030 x 36.000','0.040 x 36.000','0.030 x 48.000','0.040 x 48.000','0.040 x 60.000','0.060 x 60.000']
+};
+var lists;
+try{lists=JSON.parse(localStorage.getItem('coil-lists-v3')||'null')||JSON.parse(JSON.stringify(DEFAULTS));}
+catch(e){lists=JSON.parse(JSON.stringify(DEFAULTS));}
+function saveLists(){try{localStorage.setItem('coil-lists-v3',JSON.stringify(lists));}catch(e){}}
+
+function populateSelects(){
+  [['sel-provider','providers'],['sel-size','sizes']].forEach(function(p){
+    var sel=document.getElementById(p[0]);
+    var cur=sel.value;
+    sel.innerHTML='<option value="">— sélectionner —</option>';
+    lists[p[1]].forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o);});
+    sel.value=cur;
+  });
+}
+
+function renderTags(key){
+  var container=document.getElementById('tags-'+key);
+  container.innerHTML='';
+  lists[key].forEach(function(v,i){
+    var tag=document.createElement('span');tag.className='tag';
+    tag.innerHTML=v+'<span class="tag-x" onclick="removeItem(\''+key+'\','+i+')">×</span>';
+    container.appendChild(tag);
+  });
+}
+
+function addItem(key){
+  var inp=document.getElementById('add-'+key);
+  var val=inp.value.trim();
+  if(!val||lists[key].indexOf(val)>=0)return;
+  lists[key].push(val);saveLists();renderTags(key);populateSelects();inp.value='';
+}
+function removeItem(key,i){lists[key].splice(i,1);saveLists();renderTags(key);populateSelects();}
+
+['providers','sizes'].forEach(function(key){
+  var el=document.getElementById('add-'+key);
+  if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')addItem(key);});
+});
+
+var activeTab='providers';
+function switchTab(key){
+  activeTab=key;
+  ['providers','sizes'].forEach(function(k){document.getElementById('list-'+k).style.display=k===key?'block':'none';});
+  document.querySelectorAll('.tab').forEach(function(t,i){t.classList.toggle('active',['providers','sizes'][i]===key);});
+  renderTags(key);
+}
+function showView(v){
+  document.getElementById('view-form').style.display=v==='form'?'block':'none';
+  document.getElementById('view-lists').style.display=v==='lists'?'block':'none';
+  if(v==='lists')renderTags(activeTab);
+}
+
+function pad(n){return String(n).padStart(2,'0');}
+function nowDateTime(){
+  var d=new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())
+    +' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function generateSheet(){
+  var size=document.getElementById('sel-size').value;
+  var provider=document.getElementById('sel-provider').value;
+  var sku=document.getElementById('inp-sku').value.trim();
+  var weight=document.getElementById('inp-weight').value;
+  var notes=document.getElementById('inp-notes').value.trim();
+  var name=document.getElementById('inp-name').value.trim();
+
+  if(!size||!provider||!sku||!weight){
+    alert('Veuillez remplir: dimension, fournisseur, N° de série et poids.');return;
+  }
+
+  var parts=size.split('x');
+  var thick=parts[0]?parts[0].trim():'';
+  var width=parts[1]?parts[1].trim():'';
+
+  var html=
+    '<div class="ps" id="the-sheet">'
+      +'<div class="ps-section">'
+        +'<span class="ps-label">1 – Produit</span>'
+        +'<div class="ps-produit">'
+          +'<span class="ps-value">'+thick+'</span>'
+          +'<span class="ps-x">X</span>'
+          +'<span class="ps-value">'+width+'</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="ps-section">'
+        +'<span class="ps-label">2 – Fournisseur</span>'
+        +'<span class="ps-value" style="font-size:18px">'+provider+'</span>'
+      +'</div>'
+      +'<div class="ps-section">'
+        +'<span class="ps-label">3 – # Série / SKU</span>'
+        +'<span class="ps-value" style="font-size:20px;letter-spacing:0.03em">'+sku+'</span>'
+      +'</div>'
+      +'<div class="ps-section">'
+        +'<span class="ps-label">4 – Poids</span>'
+        +'<div style="display:flex;align-items:baseline;gap:6px">'
+          +'<span class="ps-value" style="font-size:24px">'+parseFloat(weight).toLocaleString('fr-CA')+'</span>'
+          +'<span style="font-size:14px;font-weight:700">LB</span>'
+        +'</div>'
+      +'</div>'
+      +'<div class="ps-articles">'
+        +'<span class="ps-label" style="padding:5px 7px 0;display:block">5 – Articles / Remarques</span>'
+        +'<div class="ps-articles-body">'+(notes||'')+'</div>'
+      +'</div>'
+      +'<div class="ps-recept">'
+        +'<span class="ps-label">6 – Réceptionné par</span>'
+        +'<span class="ps-value" style="font-size:14px">'+(name||'&nbsp;')+'</span>'
+        +'<span style="font-size:8px;color:#444;display:block;margin-top:1px">'+nowDateTime()+'</span>'
+      +'</div>'
+      +'<div class="ps-barcode">'
+        +'<canvas id="bc"></canvas>'
+      +'</div>'
+    +'</div>';
+
+  document.getElementById('empty-msg').style.display='none';
+  var pa=document.getElementById('print-area');
+  pa.innerHTML=html;pa.style.display='block';
+
+  setTimeout(function(){
+    var c=document.getElementById('bc');
+    if(c&&window.JsBarcode){
+      try{
+        JsBarcode(c,sku,{format:'CODE128',width:2.2,height:50,displayValue:true,fontSize:12,margin:2,background:'#ffffff',lineColor:'#000000'});
+      }catch(e){
+        c.style.display='none';
+        c.insertAdjacentHTML('afterend','<span style="font-size:9px;color:#c00">Caractères invalides pour le code-barres</span>');
+      }
+    }
+  },80);
+
+  document.getElementById('print-btn-row').style.display='flex';
+  var msg=document.getElementById('success-msg');
+  msg.style.display='block';
+  setTimeout(function(){msg.style.display='none';},2500);
+}
+
+function resetSheet(){
+  document.getElementById('empty-msg').style.display='flex';
+  document.getElementById('print-area').style.display='none';
+  document.getElementById('print-btn-row').style.display='none';
+  ['sel-provider','sel-size'].forEach(function(id){document.getElementById(id).value='';});
+  ['inp-sku','inp-weight','inp-notes','inp-name'].forEach(function(id){document.getElementById(id).value='';});
+}
+
+populateSelects();
+</script>
+</body>
+</html>

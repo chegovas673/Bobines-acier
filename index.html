@@ -181,7 +181,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script>
 // ── Config JSONBin ──
 var BIN_ID = '69e96c7daaba88219729dc04';
-var API_KEY = '$2a$10$c2l6Lvn1itY4P3yT/hHe8Oiq1RSskgRuvQKujp//JKuyc0db16if6';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -236,48 +236,65 @@ var lists = JSON.parse(JSON.stringify(DEFAULTS));
 function loadLists(){
   setSyncStatus('loading','Synchronisation...');
 
-  // Always load from JSONBin — it is the single source of truth
   fetch(BIN_URL + '/latest', {
     cache: 'no-store',
-    headers: { 'X-Master-Key': API_KEY }
+    headers: {
+      'X-Master-Key': API_KEY,
+      'X-Bin-Meta': 'false'
+    }
   })
   .then(function(r){
-    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok) throw new Error('HTTP_' + r.status);
     return r.json();
   })
   .then(function(data){
-    if(data && data.record && data.record.providers){
+    if(data && data.providers){
+      lists = data;
+    } else if(data && data.record && data.record.providers){
       lists = data.record;
     } else {
-      // Bin exists but is empty/wrong shape — seed it with defaults
       lists = JSON.parse(JSON.stringify(DEFAULTS));
       return saveListsToServer();
     }
-    // Mirror to localStorage so the app works offline after first load
     try{ localStorage.setItem('coil-lists-cache', JSON.stringify(lists)); }catch(e){}
     populateSelects();
     renderTags(activeTab);
     setSyncStatus('ok','Synchronisé');
   })
-  .catch(function(){
-    // No network — use localStorage mirror if available, else defaults
+  .catch(function(err){
+    var msg = err && err.message ? err.message : 'Erreur inconnue';
     var cached = null;
     try{ cached = JSON.parse(localStorage.getItem('coil-lists-cache') || 'null'); }catch(e){}
     lists = cached || JSON.parse(JSON.stringify(DEFAULTS));
     populateSelects();
     renderTags(activeTab);
-    setSyncStatus('err','Hors ligne – données en cache');
+    if(msg.indexOf('HTTP_401') >= 0){
+      setSyncStatus('err','Clé API invalide (401)');
+      showSyncMsg('Erreur 401 — clé API incorrecte ou expirée. Vérifiez votre clé JSONBin.', 'err');
+    } else if(msg.indexOf('HTTP_404') >= 0){
+      setSyncStatus('err','Bin introuvable (404)');
+      showSyncMsg('Erreur 404 — Bin ID introuvable. Vérifiez votre Bin ID JSONBin.', 'err');
+    } else if(msg.indexOf('HTTP_4') >= 0 || msg.indexOf('HTTP_5') >= 0){
+      setSyncStatus('err','Erreur serveur (' + msg + ')');
+      showSyncMsg('Erreur ' + msg + ' — contactez le support JSONBin.', 'err');
+    } else {
+      setSyncStatus('err','Hors ligne – données en cache');
+    }
   });
 }
 
 function saveListsToServer(){
   return fetch(BIN_URL, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': API_KEY,
+      'X-Bin-Meta': 'false'
+    },
     body: JSON.stringify(lists)
   })
   .then(function(r){
-    if(!r.ok) throw new Error('HTTP ' + r.status);
+    if(!r.ok) throw new Error('HTTP_' + r.status);
     return r.json();
   })
   .then(function(){
@@ -287,10 +304,15 @@ function saveListsToServer(){
     setSyncStatus('ok','Synchronisé');
     showSyncMsg('Listes sauvegardées et partagées avec tous!', 'ok');
   })
-  .catch(function(){
+  .catch(function(err){
+    var msg = err && err.message ? err.message : '';
     try{ localStorage.setItem('coil-lists-cache', JSON.stringify(lists)); }catch(e){}
     setSyncStatus('err','Erreur de sync');
-    showSyncMsg('Changement sauvegardé localement — vérifiez votre connexion.', 'err');
+    if(msg.indexOf('HTTP_401') >= 0){
+      showSyncMsg('Erreur 401 — clé API incorrecte ou expirée.', 'err');
+    } else {
+      showSyncMsg('Sauvegardé localement — vérifiez votre connexion. (' + msg + ')', 'err');
+    }
   });
 }
 

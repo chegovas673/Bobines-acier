@@ -1,7 +1,5 @@
-const CACHE = 'bobines-v2';
-const ASSETS = [
-  './',
-  './index.html',
+const CACHE = 'bobines-v3';
+const STATIC_ASSETS = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -11,7 +9,7 @@ const ASSETS = [
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE).then(function(cache) {
-      return cache.addAll(ASSETS);
+      return cache.addAll(STATIC_ASSETS);
     })
   );
   self.skipWaiting();
@@ -30,7 +28,27 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  if(e.request.url.includes('api.jsonbin.io')) return;
+  var url = e.request.url;
+
+  // Never intercept JSONBin API calls
+  if(url.includes('api.jsonbin.io')) return;
+
+  // index.html: always try network first, fall back to cache
+  if(url.endsWith('/') || url.includes('index.html')) {
+    e.respondWith(
+      fetch(e.request).then(function(response) {
+        return caches.open(CACHE).then(function(cache) {
+          cache.put(e.request, response.clone());
+          return response;
+        });
+      }).catch(function() {
+        return caches.match(e.request);
+      })
+    );
+    return;
+  }
+
+  // Static assets: cache first, then network
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       return cached || fetch(e.request).then(function(response) {
@@ -39,8 +57,6 @@ self.addEventListener('fetch', function(e) {
           return response;
         });
       });
-    }).catch(function() {
-      return caches.match('./index.html');
     })
   );
 });

@@ -181,7 +181,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script>
 // ── Config JSONBin ──
 var BIN_ID = '69e96c7daaba88219729dc04';
-var API_KEY = '$2a$10$nl5T0VlqALuD26hCmxfvs.fNS3QXge0tZwj964APl1mUiBrwmVka6';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -235,50 +235,68 @@ var lists = JSON.parse(JSON.stringify(DEFAULTS));
 // ── JSONBin API ──
 function loadLists(){
   setSyncStatus('loading','Synchronisation...');
+
+  // Always load from JSONBin — it is the single source of truth
   fetch(BIN_URL + '/latest', {
+    cache: 'no-store',
     headers: { 'X-Master-Key': API_KEY }
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
   .then(function(data){
-    if(data && data.record){
+    if(data && data.record && data.record.providers){
       lists = data.record;
-      try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
+    } else {
+      // Bin exists but is empty/wrong shape — seed it with defaults
+      lists = JSON.parse(JSON.stringify(DEFAULTS));
+      return saveListsToServer();
     }
+    // Mirror to localStorage so the app works offline after first load
+    try{ localStorage.setItem('coil-lists-cache', JSON.stringify(lists)); }catch(e){}
     populateSelects();
     renderTags(activeTab);
     setSyncStatus('ok','Synchronisé');
   })
   .catch(function(){
-    var local = null;
-    try{ local = JSON.parse(localStorage.getItem('coil-lists-v3')||'null'); }catch(e){}
-    if(local){ lists = local; }
+    // No network — use localStorage mirror if available, else defaults
+    var cached = null;
+    try{ cached = JSON.parse(localStorage.getItem('coil-lists-cache') || 'null'); }catch(e){}
+    lists = cached || JSON.parse(JSON.stringify(DEFAULTS));
     populateSelects();
     renderTags(activeTab);
-    setSyncStatus('err','Hors ligne – liste locale');
+    setSyncStatus('err','Hors ligne – données en cache');
+  });
+}
+
+function saveListsToServer(){
+  return fetch(BIN_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+    body: JSON.stringify(lists)
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(){
+    try{ localStorage.setItem('coil-lists-cache', JSON.stringify(lists)); }catch(e){}
+    populateSelects();
+    renderTags(activeTab);
+    setSyncStatus('ok','Synchronisé');
+    showSyncMsg('Listes sauvegardées et partagées avec tous!', 'ok');
+  })
+  .catch(function(){
+    try{ localStorage.setItem('coil-lists-cache', JSON.stringify(lists)); }catch(e){}
+    setSyncStatus('err','Erreur de sync');
+    showSyncMsg('Changement sauvegardé localement — vérifiez votre connexion.', 'err');
   });
 }
 
 function saveLists(){
   setSyncStatus('loading','Sauvegarde...');
-  fetch(BIN_URL, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Master-Key': API_KEY
-    },
-    body: JSON.stringify(lists)
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(){
-    try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
-    setSyncStatus('ok','Synchronisé');
-    showSyncMsg('Listes sauvegardées et partagées avec tous!', 'ok');
-  })
-  .catch(function(){
-    try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
-    setSyncStatus('err','Erreur de sync');
-    showSyncMsg('Sauvegardé localement seulement — vérifiez votre connexion.', 'err');
-  });
+  saveListsToServer();
 }
 
 function showSyncMsg(text, type){

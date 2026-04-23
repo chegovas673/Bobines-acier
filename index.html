@@ -13,8 +13,12 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;min-height:100vh;padding:1rem}
-h1{font-size:17px;font-weight:700;letter-spacing:0.04em;color:#111;margin-bottom:1.2rem;text-transform:uppercase;display:flex;align-items:center;gap:10px}
-h1 span.badge{font-size:9px;font-weight:700;background:#111;color:#fff;padding:3px 7px;border-radius:4px;letter-spacing:0.08em;vertical-align:middle}
+h1{font-size:17px;font-weight:700;letter-spacing:0.04em;color:#111;margin-bottom:1.2rem;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-size:9px;font-weight:700;background:#111;color:#fff;padding:3px 7px;border-radius:4px;letter-spacing:0.08em}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-left:4px;flex-shrink:0}
+.sync-dot.ok{background:#27ae60}
+.sync-dot.err{background:#e74c3c}
+.sync-dot.loading{background:#f39c12}
 .app{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:960px;margin:0 auto}
 .card{background:#fff;border:1px solid #e0e0da;border-radius:10px;padding:1.1rem}
 .section-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.9rem}
@@ -25,6 +29,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 .btn{padding:9px 14px;font-size:13px;font-weight:600;letter-spacing:0.03em;border:1px solid #ccc;border-radius:6px;background:#fff;color:#333;cursor:pointer;touch-action:manipulation}
 .btn:active{opacity:0.75}
 .btn-primary{background:#111;color:#fff;border-color:#111}
+.btn-danger{background:#fff;color:#c0392b;border-color:#e0b0b0}
 .btn-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
 .tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:24px}
 .tag{display:flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px;border:1px solid #ddd;border-radius:999px;background:#f7f7f5;color:#555}
@@ -36,18 +41,15 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 .tab.active{color:#111;border-bottom-color:#111}
 .preview-empty{display:flex;align-items:center;justify-content:center;height:260px;color:#bbb;font-size:12px;border:1px dashed #ddd;border-radius:8px;text-align:center;padding:1rem}
 .success-msg{font-size:11px;color:#27ae60;padding:5px 10px;background:#eafaf1;border-radius:5px;display:none;margin-top:8px}
+.sync-msg{font-size:11px;padding:5px 10px;border-radius:5px;display:none;margin-top:6px}
+.sync-msg.ok{color:#27ae60;background:#eafaf1}
+.sync-msg.err{color:#c0392b;background:#fdf0ee}
 .install-banner{display:none;background:#111;color:#fff;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:12px;align-items:center;gap:10px;max-width:960px;margin-left:auto;margin-right:auto}
 .install-banner button{padding:6px 12px;font-size:12px;font-weight:600;border:1px solid #fff;border-radius:5px;background:transparent;color:#fff;cursor:pointer;flex-shrink:0}
+.offline-banner{display:none;background:#c0392b;color:#fff;border-radius:8px;padding:8px 14px;margin-bottom:1rem;font-size:12px;text-align:center;max-width:960px;margin-left:auto;margin-right:auto}
 
 /* ── PRINT SHEET: 4×6 inch ── */
-.ps{
-  background:#fff;color:#000;
-  font-family:Arial,Helvetica,sans-serif;
-  border:1.5px solid #000;
-  width:4in;height:6in;
-  font-size:11px;
-  display:flex;flex-direction:column;
-}
+.ps{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;border:1.5px solid #000;width:4in;height:6in;font-size:11px;display:flex;flex-direction:column}
 .ps-section{border-bottom:1px solid #000;padding:5px 7px;flex-shrink:0}
 .ps-label{font-size:8px;font-weight:700;letter-spacing:0.07em;color:#000;display:block;margin-bottom:2px;text-transform:uppercase}
 .ps-value{font-size:16px;font-weight:700;display:block;padding:1px 0 1px 2px;line-height:1.2}
@@ -81,22 +83,30 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
   <button onclick="installApp()">Installer</button>
   <button onclick="document.getElementById('install-banner').style.display='none'" style="border:none;background:transparent;color:#aaa;font-size:18px;padding:0 4px">×</button>
 </div>
+<div id="offline-banner" class="offline-banner no-print" style="display:none">
+  Vous êtes hors ligne — les listes affichées sont celles sauvegardées localement.
+</div>
 
 <div style="max-width:960px;margin:0 auto">
-  <h1>Réception Bobines d'Acier <span class="badge no-print">PWA</span></h1>
-  <div class="app">
+  <h1>
+    Réception Bobines d'Acier
+    <span class="badge no-print">PWA</span>
+    <span id="sync-dot" class="sync-dot loading no-print" title="Synchronisation..."></span>
+    <span id="sync-label" style="font-size:10px;color:#aaa;font-weight:400" class="no-print">Connexion...</span>
+  </h1>
 
+  <div class="app">
     <!-- FORM -->
     <div class="card no-print">
       <div id="view-form">
         <p class="section-title">Nouvelle entrée de bobine</p>
         <div class="field">
           <label>1 – Produit (épaisseur × largeur)</label>
-          <select id="sel-size"><option value="">— sélectionner —</option></select>
+          <select id="sel-size"><option value="">— chargement... —</option></select>
         </div>
         <div class="field">
           <label>2 – Fournisseur</label>
-          <select id="sel-provider"><option value="">— sélectionner —</option></select>
+          <select id="sel-provider"><option value="">— chargement... —</option></select>
         </div>
         <div class="field">
           <label>3 – N° de série / SKU</label>
@@ -122,7 +132,10 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
       </div>
 
       <div id="view-lists" style="display:none">
-        <p class="section-title">Gérer les options des listes</p>
+        <p class="section-title">
+          Gérer les listes partagées
+          <span style="font-weight:400;color:#aaa;font-size:10px;text-transform:none;letter-spacing:0"> — synchronisées pour tous</span>
+        </p>
         <div class="tabs">
           <div class="tab active" onclick="switchTab('providers')">Fournisseurs</div>
           <div class="tab" onclick="switchTab('sizes')">Dimensions</div>
@@ -141,8 +154,10 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
             <button class="btn" onclick="addItem('sizes')">Ajouter</button>
           </div>
         </div>
+        <p class="sync-msg" id="sync-msg"></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="showView('form')">Retour au formulaire</button>
+          <button class="btn" onclick="loadLists()">Rafraîchir</button>
         </div>
       </div>
     </div>
@@ -159,12 +174,16 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
         <button class="btn" onclick="resetSheet()">Nouvelle entrée</button>
       </div>
     </div>
-
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
+// ── Config JSONBin ──
+var BIN_ID = '69e96c7daaba88219729dc04';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
+var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
+
 // ── Service Worker ──
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
@@ -172,38 +191,106 @@ if('serviceWorker' in navigator){
   });
 }
 
+// ── Offline detection ──
+function updateOnlineStatus(){
+  document.getElementById('offline-banner').style.display = navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
 // ── Install prompt ──
 var deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',function(e){
-  e.preventDefault();
-  deferredPrompt=e;
-  var banner=document.getElementById('install-banner');
-  if(banner){banner.style.display='flex';}
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('install-banner').style.display='flex';
 });
 function installApp(){
   if(!deferredPrompt)return;
   deferredPrompt.prompt();
   deferredPrompt.userChoice.then(function(){
     deferredPrompt=null;
-    var banner=document.getElementById('install-banner');
-    if(banner)banner.style.display='none';
+    document.getElementById('install-banner').style.display='none';
   });
 }
 window.addEventListener('appinstalled',function(){
-  var banner=document.getElementById('install-banner');
-  if(banner)banner.style.display='none';
+  document.getElementById('install-banner').style.display='none';
 });
 
-// ── Data ──
-var DEFAULTS={
-  providers:['COLOR STEEL','NOVA STEEL','MICHEL DESCHAMPS','SAMUEL','ARCELOR MITTAL'],
-  sizes:['0.009 x 42.250','0.030 x 36.000','0.040 x 36.000','0.030 x 48.000','0.040 x 48.000','0.040 x 60.000','0.060 x 60.000']
-};
-var lists;
-try{lists=JSON.parse(localStorage.getItem('coil-lists-v3')||'null')||JSON.parse(JSON.stringify(DEFAULTS));}
-catch(e){lists=JSON.parse(JSON.stringify(DEFAULTS));}
-function saveLists(){try{localStorage.setItem('coil-lists-v3',JSON.stringify(lists));}catch(e){}}
+// ── Sync status UI ──
+function setSyncStatus(state, label){
+  var dot = document.getElementById('sync-dot');
+  var lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot no-print ' + state;
+  if(lbl) lbl.textContent = label;
+}
 
+// ── Fallback defaults ──
+var DEFAULTS = {
+  providers: ['COLOR STEEL','NOVA STEEL','MICHEL DESCHAMPS','SAMUEL','ARCELOR MITTAL'],
+  sizes: ['0.009 x 42.250','0.030 x 36.000','0.040 x 36.000','0.030 x 48.000','0.040 x 48.000','0.040 x 60.000','0.060 x 60.000']
+};
+var lists = JSON.parse(JSON.stringify(DEFAULTS));
+
+// ── JSONBin API ──
+function loadLists(){
+  setSyncStatus('loading','Synchronisation...');
+  fetch(BIN_URL + '/latest', {
+    headers: { 'X-Master-Key': API_KEY }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data && data.record){
+      lists = data.record;
+      try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
+    }
+    populateSelects();
+    renderTags(activeTab);
+    setSyncStatus('ok','Synchronisé');
+  })
+  .catch(function(){
+    var local = null;
+    try{ local = JSON.parse(localStorage.getItem('coil-lists-v3')||'null'); }catch(e){}
+    if(local){ lists = local; }
+    populateSelects();
+    renderTags(activeTab);
+    setSyncStatus('err','Hors ligne – liste locale');
+  });
+}
+
+function saveLists(){
+  setSyncStatus('loading','Sauvegarde...');
+  fetch(BIN_URL, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': API_KEY
+    },
+    body: JSON.stringify(lists)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(){
+    try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
+    setSyncStatus('ok','Synchronisé');
+    showSyncMsg('Listes sauvegardées et partagées avec tous!', 'ok');
+  })
+  .catch(function(){
+    try{ localStorage.setItem('coil-lists-v3', JSON.stringify(lists)); }catch(e){}
+    setSyncStatus('err','Erreur de sync');
+    showSyncMsg('Sauvegardé localement seulement — vérifiez votre connexion.', 'err');
+  });
+}
+
+function showSyncMsg(text, type){
+  var el = document.getElementById('sync-msg');
+  if(!el) return;
+  el.textContent = text;
+  el.className = 'sync-msg ' + type;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display='none'; }, 3500);
+}
+
+// ── UI ──
 function populateSelects(){
   [['sel-provider','providers'],['sel-size','sizes']].forEach(function(p){
     var sel=document.getElementById(p[0]);
@@ -216,6 +303,7 @@ function populateSelects(){
 
 function renderTags(key){
   var container=document.getElementById('tags-'+key);
+  if(!container) return;
   container.innerHTML='';
   lists[key].forEach(function(v,i){
     var tag=document.createElement('span');tag.className='tag';
@@ -226,15 +314,27 @@ function renderTags(key){
 
 function addItem(key){
   var inp=document.getElementById('add-'+key);
-  var val=inp.value.trim();
-  if(!val||lists[key].indexOf(val)>=0)return;
-  lists[key].push(val);saveLists();renderTags(key);populateSelects();inp.value='';
+  var val=inp.value.trim().toUpperCase();
+  if(key==='sizes') val=inp.value.trim();
+  if(!val||lists[key].indexOf(val)>=0) return;
+  lists[key].push(val);
+  saveLists();
+  renderTags(key);
+  populateSelects();
+  inp.value='';
 }
-function removeItem(key,i){lists[key].splice(i,1);saveLists();renderTags(key);populateSelects();}
+
+function removeItem(key,i){
+  if(!confirm('Retirer « '+lists[key][i]+' » de la liste partagée?')) return;
+  lists[key].splice(i,1);
+  saveLists();
+  renderTags(key);
+  populateSelects();
+}
 
 ['providers','sizes'].forEach(function(key){
   var el=document.getElementById('add-'+key);
-  if(el)el.addEventListener('keydown',function(e){if(e.key==='Enter')addItem(key);});
+  if(el) el.addEventListener('keydown',function(e){if(e.key==='Enter')addItem(key);});
 });
 
 var activeTab='providers';
@@ -247,14 +347,14 @@ function switchTab(key){
 function showView(v){
   document.getElementById('view-form').style.display=v==='form'?'block':'none';
   document.getElementById('view-lists').style.display=v==='lists'?'block':'none';
-  if(v==='lists')renderTags(activeTab);
+  if(v==='lists') renderTags(activeTab);
 }
 
+// ── Sheet generation ──
 function pad(n){return String(n).padStart(2,'0');}
 function nowDateTime(){
   var d=new Date();
-  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())
-    +' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
 }
 
 function generateSheet(){
@@ -266,7 +366,7 @@ function generateSheet(){
   var name=document.getElementById('inp-name').value.trim();
 
   if(!size||!provider||!sku||!weight){
-    alert('Veuillez remplir: dimension, fournisseur, N° de série et poids.');return;
+    alert('Veuillez remplir: dimension, fournisseur, N° de série et poids.'); return;
   }
 
   var parts=size.split('x');
@@ -275,46 +375,34 @@ function generateSheet(){
 
   var html=
     '<div class="ps" id="the-sheet">'
-      +'<div class="ps-section">'
-        +'<span class="ps-label">1 – Produit</span>'
-        +'<div class="ps-produit">'
-          +'<span class="ps-value">'+thick+'</span>'
-          +'<span class="ps-x">X</span>'
-          +'<span class="ps-value">'+width+'</span>'
-        +'</div>'
+      +'<div class="ps-section"><span class="ps-label">1 – Produit</span>'
+        +'<div class="ps-produit"><span class="ps-value">'+thick+'</span><span class="ps-x">X</span><span class="ps-value">'+width+'</span></div>'
       +'</div>'
-      +'<div class="ps-section">'
-        +'<span class="ps-label">2 – Fournisseur</span>'
+      +'<div class="ps-section"><span class="ps-label">2 – Fournisseur</span>'
         +'<span class="ps-value" style="font-size:18px">'+provider+'</span>'
       +'</div>'
-      +'<div class="ps-section">'
-        +'<span class="ps-label">3 – # Série / SKU</span>'
+      +'<div class="ps-section"><span class="ps-label">3 – # Série / SKU</span>'
         +'<span class="ps-value" style="font-size:20px;letter-spacing:0.03em">'+sku+'</span>'
       +'</div>'
-      +'<div class="ps-section">'
-        +'<span class="ps-label">4 – Poids</span>'
+      +'<div class="ps-section"><span class="ps-label">4 – Poids</span>'
         +'<div style="display:flex;align-items:baseline;gap:6px">'
           +'<span class="ps-value" style="font-size:24px">'+parseFloat(weight).toLocaleString('fr-CA')+'</span>'
           +'<span style="font-size:14px;font-weight:700">LB</span>'
         +'</div>'
       +'</div>'
-      +'<div class="ps-articles">'
-        +'<span class="ps-label" style="padding:5px 7px 0;display:block">5 – Articles / Remarques</span>'
+      +'<div class="ps-articles"><span class="ps-label" style="padding:5px 7px 0;display:block">5 – Articles / Remarques</span>'
         +'<div class="ps-articles-body">'+(notes||'')+'</div>'
       +'</div>'
-      +'<div class="ps-recept">'
-        +'<span class="ps-label">6 – Réceptionné par</span>'
+      +'<div class="ps-recept"><span class="ps-label">6 – Réceptionné par</span>'
         +'<span class="ps-value" style="font-size:14px">'+(name||'&nbsp;')+'</span>'
         +'<span style="font-size:8px;color:#444;display:block;margin-top:1px">'+nowDateTime()+'</span>'
       +'</div>'
-      +'<div class="ps-barcode">'
-        +'<canvas id="bc"></canvas>'
-      +'</div>'
+      +'<div class="ps-barcode"><canvas id="bc"></canvas></div>'
     +'</div>';
 
   document.getElementById('empty-msg').style.display='none';
   var pa=document.getElementById('print-area');
-  pa.innerHTML=html;pa.style.display='block';
+  pa.innerHTML=html; pa.style.display='block';
 
   setTimeout(function(){
     var c=document.getElementById('bc');
@@ -342,7 +430,8 @@ function resetSheet(){
   ['inp-sku','inp-weight','inp-notes','inp-name'].forEach(function(id){document.getElementById(id).value='';});
 }
 
-populateSelects();
+// ── Init ──
+loadLists();
 </script>
 </body>
 </html>

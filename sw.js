@@ -1,4 +1,4 @@
-const CACHE = 'bobines-v1';
+const CACHE = 'bobines-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
+  if(e.request.url.includes('api.jsonbin.io')) return;
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       return cached || fetch(e.request).then(function(response) {

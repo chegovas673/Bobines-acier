@@ -191,8 +191,8 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 // ── Config JSONBin ──
-var BIN_ID = '69ea09a2aaba8821972c90ab';
-var API_KEY = '$2a$10$c2l6Lvn1itY4P3yT/hHe8Oiq1RSskgRuvQKujp//JKuyc0db16if6';
+var BIN_ID = '69e96c7daaba88219729dc04';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -569,7 +569,25 @@ function printLabel(){
   var sheet = document.getElementById('the-sheet');
   if(!sheet){ alert('Générez une fiche avant d\'imprimer.'); return; }
 
+  // Convert barcode canvas to PNG data URL before copying HTML
+  var bc = document.getElementById('bc');
+  if(bc){
+    var dataUrl = bc.toDataURL('image/png');
+    var img = document.createElement('img');
+    img.src = dataUrl;
+    img.style.cssText = bc.style.cssText;
+    img.width = bc.width;
+    img.height = bc.height;
+    bc.parentNode.replaceChild(img, bc);
+  }
+
   var sheetHTML = sheet.outerHTML;
+
+  // Restore canvas after capturing HTML
+  if(bc){
+    var imgEl = sheet.querySelector('img[src^="data:image/png"][width]');
+    if(imgEl){ imgEl.parentNode.replaceChild(bc, imgEl); }
+  }
 
   var win = window.open('', '_blank', 'width=600,height=700');
   win.document.write([

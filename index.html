@@ -51,7 +51,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 .offline-banner{display:none;background:#c0392b;color:#fff;border-radius:8px;padding:8px 14px;margin-bottom:1rem;font-size:12px;text-align:center;max-width:960px;margin-left:auto;margin-right:auto}
 
 /* ── PRINT SHEET: 4×6 inch ── */
-.ps{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;border:1.5px solid #000;width:4in;height:6in;font-size:11px;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;transition:width 0.2s,height 0.2s}
+.ps{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;border:1.5px solid #000;font-size:11px;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}
 .ps-section{border-bottom:1px solid #000;padding:5px 7px;flex-shrink:0}
 .ps-label{font-size:8px;font-weight:700;letter-spacing:0.07em;color:#000;display:block;margin-bottom:2px;text-transform:uppercase}
 .ps-value{font-size:16px;font-weight:700;display:inline-block;padding:1px 0 1px 2px;line-height:1.2}
@@ -64,12 +64,12 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 .ps-barcode{padding:3px 7px 3px;display:flex;flex-direction:column;align-items:center;flex-shrink:0;overflow:hidden}
 
 @media print{
-  body{background:#fff;padding:0;margin:0}
+  html,body{margin:0;padding:0;background:#fff;width:100%;height:100%}
   .no-print{display:none!important}
-  .app{display:block}
-  .card{border:none;padding:0;box-shadow:none}
-  .ps{border:none;page-break-inside:avoid;page-break-after:avoid}
-  *{page-break-inside:avoid}
+  .install-banner,.offline-banner{display:none!important}
+  .app,.card{display:block;border:none;padding:0;margin:0;box-shadow:none;background:transparent}
+  #preview-area,#print-area{display:block!important;margin:0;padding:0}
+  .ps{margin:0;padding:0;page-break-inside:avoid;page-break-after:avoid;page-break-before:avoid}
 }
 @media(max-width:640px){
   .app{grid-template-columns:1fr}
@@ -191,8 +191,8 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
 // ── Config JSONBin ──
-var BIN_ID = '69ea09a2aaba8821972c90ab';
-var API_KEY = '$2a$10$c2l6Lvn1itY4P3yT/hHe8Oiq1RSskgRuvQKujp//JKuyc0db16if6';
+var BIN_ID = '69e96c7daaba88219729dc04';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -553,7 +553,15 @@ function updatePrintStyle(){
     printStyleEl.id = 'dynamic-print-style';
     document.head.appendChild(printStyleEl);
   }
-  printStyleEl.textContent = '@media print { @page { size:' + labelW + ' ' + labelH + '; margin:0; } .ps { width:' + labelW + ' !important; height:' + labelH + ' !important; } }';
+  // Set @page size, .ps size for print, and screen preview size
+  printStyleEl.textContent = [
+    '@page { size:' + labelW + ' ' + labelH + '; margin:0; }',
+    '@media print {',
+    '  html, body { width:' + labelW + '; height:' + labelH + '; margin:0; padding:0; overflow:hidden; }',
+    '  .ps { width:' + labelW + ' !important; height:' + labelH + ' !important; max-width:' + labelW + '; max-height:' + labelH + '; overflow:hidden; }',
+    '}',
+    '.ps { width:' + labelW + '; height:' + labelH + '; }'
+  ].join(' ');
 }
 
 // ── Init ──

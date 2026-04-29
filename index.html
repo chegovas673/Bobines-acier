@@ -175,7 +175,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 
     <!-- PREVIEW -->
     <div class="card" style="display:flex;flex-direction:column">
-      <p class="section-title no-print">Aperçu 4 × 6 po</p>
+      <p class="section-title no-print" id="preview-title">Aperçu 3 × 5 po</p>
       <div id="preview-area">
         <div class="preview-empty" id="empty-msg">Remplissez le formulaire et cliquez sur « Générer la fiche »</div>
         <div id="print-area" style="display:none"></div>
@@ -192,7 +192,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script>
 // ── Config JSONBin ──
 var BIN_ID = '69ea09a2aaba8821972c90ab';
-var API_KEY = '$2a$10$c2l6Lvn1itY4P3yT/hHe8Oiq1RSskgRuvQKujp//JKuyc0db16if6';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -488,8 +488,6 @@ function generateSheet(){
   document.getElementById('empty-msg').style.display='none';
   var pa=document.getElementById('print-area');
   pa.innerHTML=html; pa.style.display='block';
-  var ps=document.getElementById('the-sheet');
-  if(ps){ ps.style.width=labelW; ps.style.height=labelH; }
   updatePrintStyle();
 
   setTimeout(function(){
@@ -530,12 +528,20 @@ function setLabelSize(w, h, btn){
   document.querySelectorAll('.size-btn').forEach(function(b){ b.classList.remove('active'); });
   if(btn) btn.classList.add('active');
 
-  // Update preview card size
-  var ps = document.getElementById('the-sheet');
-  if(ps){ ps.style.width = w; ps.style.height = h; }
+  // Update preview title
+  var title = document.getElementById('preview-title');
+  if(title){
+    var wLabel = w.replace('in','');
+    var hLabel = h.replace('in','');
+    title.textContent = 'Aperçu ' + wLabel + ' × ' + hLabel + ' po';
+  }
 
-  // Update @page print rule dynamically
+  // Update print style (handles both screen px and print inches)
   updatePrintStyle();
+
+  // Resize existing sheet if visible
+  var ps = document.getElementById('the-sheet');
+  if(ps){ updatePrintStyle(); }
 }
 
 function updatePrintStyle(){
@@ -544,14 +550,22 @@ function updatePrintStyle(){
     printStyleEl.id = 'dynamic-print-style';
     document.head.appendChild(printStyleEl);
   }
-  // Set @page size, .ps size for print, and screen preview size
+
+  // Convert inches to px for screen preview (96dpi)
+  var wIn = parseFloat(labelW) || 3;
+  var hIn = parseFloat(labelH) || 5;
+  var wPx = Math.round(wIn * 96) + 'px';
+  var hPx = Math.round(hIn * 96) + 'px';
+
   printStyleEl.textContent = [
-    '@page { size:' + labelW + ' ' + labelH + '; margin:0; }',
+    // Screen preview: use px so it renders correctly on screen
+    '.ps { width:' + wPx + ' !important; height:' + hPx + ' !important; }',
+    // Print: use inches for accurate physical size
     '@media print {',
+    '  @page { size:' + labelW + ' ' + labelH + '; margin:0; }',
     '  html, body { width:' + labelW + '; height:' + labelH + '; margin:0; padding:0; overflow:hidden; }',
-    '  .ps { width:' + labelW + ' !important; height:' + labelH + ' !important; max-width:' + labelW + '; max-height:' + labelH + '; overflow:hidden; }',
-    '}',
-    '.ps { width:' + labelW + '; height:' + labelH + '; }'
+    '  .ps { width:' + labelW + ' !important; height:' + labelH + ' !important; overflow:hidden; }',
+    '}'
   ].join(' ');
 }
 

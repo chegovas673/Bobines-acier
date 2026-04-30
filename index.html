@@ -12,21 +12,60 @@
 <title>Réception Bobines d'Acier</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;min-height:100vh;padding:1rem}
-h1{font-size:17px;font-weight:700;letter-spacing:0.04em;color:#111;margin-bottom:1.2rem;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* ── THEME VARIABLES ── */
+:root{
+  --bg:#f4f4f2;
+  --bg2:#fff;
+  --border:#e0e0da;
+  --border2:#d0d0cc;
+  --text:#111;
+  --text2:#666;
+  --text3:#888;
+  --input-bg:#fff;
+  --btn-bg:#fff;
+  --btn-border:#ccc;
+  --btn-text:#333;
+  --tag-bg:#f7f7f5;
+  --tag-border:#ddd;
+  --tab-border:#e5e5e0;
+  --sync-label:#aaa;
+  --offline-bg:#c0392b;
+  --shadow:0 0 0 3px rgba(58,138,224,0.15);
+}
+body.dark{
+  --bg:#0f1117;
+  --bg2:#1a1d27;
+  --border:#2e3244;
+  --border2:#3a3f55;
+  --text:#e8eaf0;
+  --text2:#9da3b4;
+  --text3:#6b7280;
+  --input-bg:#12151f;
+  --btn-bg:#1e2130;
+  --btn-border:#3a3f55;
+  --btn-text:#c8ccd8;
+  --tag-bg:#1e2130;
+  --tag-border:#3a3f55;
+  --tab-border:#2e3244;
+  --sync-label:#6b7280;
+  --shadow:0 0 0 3px rgba(99,155,230,0.20);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);min-height:100vh;padding:1rem}
+h1{font-size:17px;font-weight:700;letter-spacing:0.04em;color:var(--text);margin-bottom:1.2rem;text-transform:uppercase;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .badge{font-size:9px;font-weight:700;background:#111;color:#fff;padding:3px 7px;border-radius:4px;letter-spacing:0.08em}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-left:4px;flex-shrink:0}
 .sync-dot.ok{background:#27ae60}
 .sync-dot.err{background:#e74c3c}
 .sync-dot.loading{background:#f39c12}
 .app{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:960px;margin:0 auto}
-.card{background:#fff;border:1px solid #e0e0da;border-radius:10px;padding:1.1rem}
-.section-title{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.9rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.1rem}
+.section-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.9rem}
 .field{margin-bottom:0.8rem}
-label{display:block;font-size:12px;color:#666;margin-bottom:3px}
-select,input[type=text],input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:1px solid #d0d0cc;border-radius:6px;background:#fff;color:#111;-webkit-appearance:none}
-select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px rgba(58,138,224,0.15)}
-.btn{padding:9px 14px;font-size:13px;font-weight:600;letter-spacing:0.03em;border:1px solid #ccc;border-radius:6px;background:#fff;color:#333;cursor:pointer;touch-action:manipulation}
+label{display:block;font-size:12px;color:var(--text2);margin-bottom:3px}
+select,input[type=text],input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:1px solid var(--border2);border-radius:6px;background:var(--input-bg);color:var(--text);-webkit-appearance:none}
+select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:var(--shadow)}
+.btn{padding:9px 14px;font-size:13px;font-weight:600;letter-spacing:0.03em;border:1px solid var(--btn-border);border-radius:6px;background:var(--btn-bg);color:var(--btn-text);cursor:pointer;touch-action:manipulation}
 .btn:active{opacity:0.75}
 .btn-primary{background:#111;color:#fff;border-color:#111}
 .size-btn{font-size:11px;padding:5px 10px}
@@ -34,14 +73,14 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 .btn-danger{background:#fff;color:#c0392b;border-color:#e0b0b0}
 .btn-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
 .tag-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;min-height:24px}
-.tag{display:flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px;border:1px solid #ddd;border-radius:999px;background:#f7f7f5;color:#555}
+.tag{display:flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px;border:1px solid var(--tag-border);border-radius:999px;background:var(--tag-bg);color:var(--text2)}
 .tag-x{cursor:pointer;font-size:14px;color:#aaa;line-height:1;padding:0 2px}
 .add-row{display:flex;gap:6px;margin-top:6px}
 .add-row input{flex:1}
-.tabs{display:flex;margin-bottom:1rem;border-bottom:1px solid #e5e5e0}
-.tab{padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;text-transform:uppercase;letter-spacing:0.05em;touch-action:manipulation}
-.tab.active{color:#111;border-bottom-color:#111}
-.preview-empty{display:flex;align-items:center;justify-content:center;height:260px;color:#bbb;font-size:12px;border:1px dashed #ddd;border-radius:8px;text-align:center;padding:1rem}
+.tabs{display:flex;margin-bottom:1rem;border-bottom:1px solid var(--tab-border)}
+.tab{padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;text-transform:uppercase;letter-spacing:0.05em;touch-action:manipulation}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+.preview-empty{display:flex;align-items:center;justify-content:center;height:260px;color:var(--text3);font-size:12px;border:1px dashed var(--border);border-radius:8px;text-align:center;padding:1rem}
 .success-msg{font-size:11px;color:#27ae60;padding:5px 10px;background:#eafaf1;border-radius:5px;display:none;margin-top:8px}
 .sync-msg{font-size:11px;padding:5px 10px;border-radius:5px;display:none;margin-top:6px}
 .sync-msg.ok{color:#27ae60;background:#eafaf1}
@@ -94,7 +133,10 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
     Réception Bobines d'Acier
     <span class="badge no-print">PWA</span>
     <span id="sync-dot" class="sync-dot loading no-print" title="Synchronisation..."></span>
-    <span id="sync-label" style="font-size:10px;color:#aaa;font-weight:400" class="no-print">Connexion...</span>
+    <span id="sync-label" style="font-size:10px;color:var(--sync-label);font-weight:400" class="no-print">Connexion...</span>
+    <button id="theme-toggle" onclick="toggleTheme()" class="no-print" title="Changer le thème" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:14px;color:var(--text2);display:flex;align-items:center;gap:5px">
+      <span id="theme-icon">🌙</span>
+    </button>
   </h1>
 
   <div class="app">
@@ -192,7 +234,7 @@ select:focus,input:focus{outline:none;border-color:#3a8ae0;box-shadow:0 0 0 3px 
 <script>
 // ── Config JSONBin ──
 var BIN_ID = '69ea09a2aaba8821972c90ab';
-var API_KEY = '$2a$10$c2l6Lvn1itY4P3yT/hHe8Oiq1RSskgRuvQKujp//JKuyc0db16if6';
+var API_KEY = '$2a$10$l/y9jzGfQydbNTvjd30Rke.elt0ZWx1rqOA5vtNEkQksPIP//4Zh.';
 var BIN_URL = 'https://api.jsonbin.io/v3/b/' + BIN_ID;
 
 // ── Service Worker ──
@@ -629,7 +671,27 @@ function printLabel(){
   }, 800);
 }
 
+// ── Theme ──
+function toggleTheme(){
+  var isDark = document.body.classList.toggle('dark');
+  document.getElementById('theme-icon').textContent = isDark ? '☀️' : '🌙';
+  try{ localStorage.setItem('coil-theme', isDark ? 'dark' : 'light'); }catch(e){}
+}
+function initTheme(){
+  var saved = null;
+  try{ saved = localStorage.getItem('coil-theme'); }catch(e){}
+  // Default to dark
+  if(saved === 'light'){
+    document.body.classList.remove('dark');
+    document.getElementById('theme-icon').textContent = '🌙';
+  } else {
+    document.body.classList.add('dark');
+    document.getElementById('theme-icon').textContent = '☀️';
+  }
+}
+
 // ── Init ──
+initTheme();
 updatePrintStyle();
 loadLists();
 </script>
